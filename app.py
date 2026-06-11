@@ -48,18 +48,26 @@ for i, (name, ticker) in enumerate(assets.items()):
         prev = data["Close"].iloc[-2]
         change = ((last - prev) / prev) * 100
 
+        color = "green" if change >= 0 else "red"
+
         cols[i % 4].markdown(
             f"""
             <div style="
-                padding:10px;
+                background:#0e1117;
                 border:1px solid #222;
-                border-radius:8px;
-                margin-bottom:8px;">
-                <div style="font-size:12px; opacity:0.7;">{name}</div>
-                <div style="font-size:18px; font-weight:600;">
+                border-radius:10px;
+                padding:12px;
+                margin-bottom:8px;
+            ">
+                <div style="font-size:11px; opacity:0.6;">
+                    {name}
+                </div>
+
+                <div style="font-size:20px; font-weight:700;">
                     {last:,.2f}
                 </div>
-                <div style="font-size:12px; color:{'lime' if change >= 0 else 'red'};">
+
+                <div style="font-size:12px; color:{color};">
                     {change:.2f}%
                 </div>
             </div>
