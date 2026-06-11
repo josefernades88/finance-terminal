@@ -3,111 +3,100 @@ import yfinance as yf
 
 st.set_page_config(page_title="Wealth Terminal", layout="wide")
 
+# ---------------- HEADER ----------------
 st.title("💼 Personal Wealth Terminal")
-st.caption("Portefólio pessoal com estrutura por planos e ativos")
 
-st.markdown("---")
+# ---------------- DATA ----------------
+positions = [
+    {"ticker": "BTC-USD", "name": "Bitcoin", "units": 3, "avg": 35},
+    {"ticker": "WULF", "name": "Terawulf", "units": 3, "avg": 4},
+    {"ticker": "AAPL", "name": "Apple", "units": 2, "avg": 150},
+]
 
-# -----------------------------
-# POSIÇÕES INDIVIDUAIS
-# -----------------------------
-positions = {
-    "BTC-USD": {"name": "Bitcoin Trust (CFD)", "units": 3, "avg": 40},
-    "TERA": {"name": "Terawulf (Ação)", "units": 3, "avg": 4},
-}
-
-# -----------------------------
-# PLANOS DE INVESTIMENTO
-# -----------------------------
 plans = {
-    "Satélite": {
-        "MSCI WORLD SMALL CAP ETF": {"units": 1, "avg": 25},
-        "MSCI INDIA ETF": {"units": 1, "avg": 25},
-    },
-    "Core": {
-        "S&P 500 ETF": {"units": 1, "avg": 300},
-    }
+    "Satélite": [
+        {"ticker": "IUSN.DE", "units": 1, "avg": 25},
+        {"ticker": "QDV5.DE", "units": 1, "avg": 25},
+    ],
+    "Core": [
+        {"ticker": "SXR8.DE", "units": 1, "avg": 300},
+    ]
 }
 
-# -----------------------------
-# FUNÇÃO BASE
-# -----------------------------
-def get_value(ticker, units):
-    data = yf.Ticker(ticker).history(period="1d")
-    if data.empty:
+# ---------------- SAFE PRICE ----------------
+def get_price(ticker):
+    try:
+        data = yf.Ticker(ticker).history(period="5d")
+        if data.empty:
+            return None
+        return data["Close"].dropna().iloc[-1]
+    except:
         return None
-    price = data["Close"].iloc[-1]
-    return price * units, price
 
-# -----------------------------
-# CALCULAR POSIÇÕES
-# -----------------------------
+# ---------------- CALCULATIONS ----------------
 total_value = 0
 total_cost = 0
 
-st.subheader("📊 Overview")
+st.subheader("🏠 Overview")
 
-# POSITIONS
+# ---------------- POSITIONS ----------------
 st.markdown("### 🧾 Positions")
 
-for ticker, data_dict in positions.items():
-    result = get_value(ticker, data_dict["units"])
-    if result:
-        value, price = result
-        cost = data_dict["avg"] * data_dict["units"]
+for p in positions:
+    price = get_price(p["ticker"])
 
-        pnl = value - cost
-        pnl_pct = (pnl / cost) * 100
+    if price is None:
+        st.warning(f"Sem dados: {p['ticker']}")
+        continue
 
-        total_value += value
-        total_cost += cost
+    value = price * p["units"]
+    cost = p["avg"] * p["units"]
+    pnl = value - cost
+    pnl_pct = (pnl / cost) * 100 if cost else 0
 
-        st.write(
-            f"**{data_dict['name']}** → "
-            f"{value:.2f} | P&L: {pnl:.2f} ({pnl_pct:.2f}%)"
-        )
+    total_value += value
+    total_cost += cost
 
+    st.write(
+        f"**{p['name']} ({p['ticker']})** → "
+        f"{value:.2f} EUR | P&L: {pnl:.2f} EUR ({pnl_pct:.2f}%)"
+    )
+
+# ---------------- PLANS ----------------
 st.markdown("---")
-
-# PLANS
 st.markdown("### 📦 Investment Plans")
 
-for plan_name, assets in plans.items():
-
+for name, assets in plans.items():
     plan_value = 0
     plan_cost = 0
 
-    st.markdown(f"#### {plan_name}")
+    st.markdown(f"#### {name}")
 
-    for ticker, d in assets.items():
-        result = get_value(ticker, d["units"])
-        if result:
-            value, price = result
-            cost = d["avg"] * d["units"]
+    for a in assets:
+        price = get_price(a["ticker"])
+        if price is None:
+            continue
 
-            plan_value += value
-            plan_cost += cost
+        value = price * a["units"]
+        cost = a["avg"] * a["units"]
 
-            st.write(f"- {ticker}: {value:.2f}")
+        plan_value += value
+        plan_cost += cost
 
-    plan_pnl = plan_value - plan_cost
-    plan_pct = (plan_pnl / plan_cost) * 100 if plan_cost else 0
-
-    st.info(f"{plan_name} Total → {plan_value:.2f} | P&L: {plan_pct:.2f}%")
+    pnl = plan_value - plan_cost
+    pnl_pct = (pnl / plan_cost) * 100 if plan_cost else 0
 
     total_value += plan_value
     total_cost += plan_cost
 
+    st.info(f"{name}: {plan_value:.2f} EUR | {pnl_pct:.2f}%")
+
+# ---------------- TOTAL ----------------
 st.markdown("---")
 
-# -----------------------------
-# TOTAL
-# -----------------------------
 total_pnl = total_value - total_cost
 total_pct = (total_pnl / total_cost) * 100 if total_cost else 0
 
-st.subheader("🏁 Total Portfolio")
-
-st.metric("Value", f"{total_value:.2f}")
-st.metric("Invested", f"{total_cost:.2f}")
-st.metric("P&L", f"{total_pnl:.2f}", f"{total_pct:.2f}%")
+st.metric("Portfolio Value", f"{total_value:.2f} EUR")
+st.metric("Invested", f"{total_cost:.2f} EUR")
+st.metric("Total P&L", f"{total_pnl:.2f} EUR", f"{total_pct:.2f}%")
