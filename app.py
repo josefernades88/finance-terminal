@@ -1,46 +1,38 @@
 import streamlit as st
 import yfinance as yf
 
-st.set_page_config(
-    page_title="Personal Terminal",
-    layout="wide",
-    initial_sidebar_state="expanded"
+st.set_page_config(page_title="Terminal", layout="wide")
+
+# ---------------- HEADER ----------------
+st.markdown(
+    """
+    <div style="
+        font-size:28px;
+        font-weight:700;
+        margin-bottom:0px;">
+        📈 Market Terminal
+    </div>
+    <div style="
+        font-size:13px;
+        opacity:0.6;
+        margin-bottom:15px;">
+        Personal finance • Markets • Portfolio
+    </div>
+    """,
+    unsafe_allow_html=True
 )
-
-# ----------------------------
-# HEADER
-# ----------------------------
-st.markdown("""
-    <style>
-        .main-title {
-            font-size: 32px;
-            font-weight: 700;
-            margin-bottom: 5px;
-        }
-        .sub-title {
-            font-size: 14px;
-            opacity: 0.7;
-            margin-bottom: 20px;
-        }
-    </style>
-""", unsafe_allow_html=True)
-
-st.markdown('<div class="main-title">📈 Personal Finance Terminal</div>', unsafe_allow_html=True)
-st.markdown('<div class="sub-title">Markets • Portfolio • Crypto • Macro</div>', unsafe_allow_html=True)
 
 st.markdown("---")
 
-# ----------------------------
-# MARKET OVERVIEW
-# ----------------------------
-st.subheader("📊 Market Overview")
+# ---------------- MARKET ----------------
+st.subheader("📊 Markets")
 
 assets = {
     "S&P 500": "^GSPC",
     "Nasdaq": "^NDX",
-    "Dow Jones": "^DJI",
+    "Dow": "^DJI",
     "VIX": "^VIX",
-    "Bitcoin": "BTC-USD",
+    "BTC": "BTC-USD",
     "Gold": "GC=F",
     "Oil": "CL=F",
     "DXY": "DX-Y.NYB"
@@ -48,9 +40,7 @@ assets = {
 
 cols = st.columns(4)
 
-i = 0
-
-for name, ticker in assets.items():
+for i, (name, ticker) in enumerate(assets.items()):
     data = yf.Ticker(ticker).history(period="2d")
 
     if len(data) >= 2:
@@ -58,24 +48,29 @@ for name, ticker in assets.items():
         prev = data["Close"].iloc[-2]
         change = ((last - prev) / prev) * 100
 
-        with cols[i % 4]:
-            st.metric(
-                label=name,
-                value=f"{last:,.2f}",
-                delta=f"{change:.2f}%"
-            )
-    else:
-        with cols[i % 4]:
-            st.metric(name, "N/A", "N/A")
-
-    i += 1
+        cols[i % 4].markdown(
+            f"""
+            <div style="
+                padding:10px;
+                border:1px solid #222;
+                border-radius:8px;
+                margin-bottom:8px;">
+                <div style="font-size:12px; opacity:0.7;">{name}</div>
+                <div style="font-size:18px; font-weight:600;">
+                    {last:,.2f}
+                </div>
+                <div style="font-size:12px; color:{'lime' if change >= 0 else 'red'};">
+                    {change:.2f}%
+                </div>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
 
 st.markdown("---")
 
-# ----------------------------
-# PORTFOLIO (SIMPLE)
-# ----------------------------
-st.subheader("💼 Portfolio Snapshot")
+# ---------------- PORTFOLIO ----------------
+st.subheader("💼 Portfolio")
 
 portfolio = {
     "AAPL": {"shares": 5, "avg": 150},
@@ -97,7 +92,9 @@ for ticker, pos in portfolio.items():
         total_value += value
         total_cost += cost
 
-        st.write(f"**{ticker}** → Value: {value:,.2f} | Invested: {cost:,.2f}")
+        st.markdown(
+            f"**{ticker}** → Value: {value:,.0f} | Cost: {cost:,.0f}"
+        )
 
 profit = total_value - total_cost
 
