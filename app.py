@@ -1,22 +1,16 @@
 import streamlit as st
 import yfinance as yf
 
-st.set_page_config(page_title="Terminal", layout="wide")
+st.set_page_config(page_title="Finance Terminal", layout="wide")
 
 # ---------------- HEADER ----------------
 st.markdown(
     """
-    <div style="
-        font-size:28px;
-        font-weight:700;
-        margin-bottom:0px;">
-        📈 Market Terminal
-    </div>
-    <div style="
-        font-size:13px;
-        opacity:0.6;
-        margin-bottom:15px;">
-        Personal finance • Markets • Portfolio
+    <div style="padding-bottom:10px;">
+        <div style="font-size:30px; font-weight:700;">📈 Personal Finance Terminal</div>
+        <div style="font-size:13px; opacity:0.6;">
+            Markets • Portfolio • Crypto • Macro (personal use)
+        </div>
     </div>
     """,
     unsafe_allow_html=True
@@ -24,7 +18,7 @@ st.markdown(
 
 st.markdown("---")
 
-# ---------------- MARKET ----------------
+# ---------------- MARKETS ----------------
 st.subheader("📊 Markets")
 
 assets = {
@@ -33,12 +27,13 @@ assets = {
     "Dow": "^DJI",
     "VIX": "^VIX",
     "BTC": "BTC-USD",
+    "ETH": "ETH-USD",
     "Gold": "GC=F",
     "Oil": "CL=F",
     "DXY": "DX-Y.NYB"
 }
 
-cols = st.columns(4)
+cols = st.columns(3)
 
 for i, (name, ticker) in enumerate(assets.items()):
     data = yf.Ticker(ticker).history(period="2d")
@@ -48,22 +43,22 @@ for i, (name, ticker) in enumerate(assets.items()):
         prev = data["Close"].iloc[-2]
         change = ((last - prev) / prev) * 100
 
-        color = "green" if change >= 0 else "red"
+        color = "#00ff88" if change >= 0 else "#ff4d4d"
 
-        cols[i % 4].markdown(
+        cols[i % 3].markdown(
             f"""
             <div style="
-                background:#0e1117;
-                border:1px solid #222;
+                background-color:#0e1117;
+                border:1px solid #1f1f1f;
                 border-radius:10px;
                 padding:12px;
-                margin-bottom:8px;
+                margin-bottom:10px;
             ">
                 <div style="font-size:11px; opacity:0.6;">
                     {name}
                 </div>
 
-                <div style="font-size:20px; font-weight:700;">
+                <div style="font-size:22px; font-weight:700;">
                     {last:,.2f}
                 </div>
 
@@ -82,6 +77,7 @@ st.subheader("💼 Portfolio")
 
 portfolio = {
     "AAPL": {"shares": 5, "avg": 150},
+    "NVDA": {"shares": 2, "avg": 400},
     "BTC-USD": {"shares": 0.1, "avg": 30000}
 }
 
@@ -100,12 +96,30 @@ for ticker, pos in portfolio.items():
         total_value += value
         total_cost += cost
 
+        pnl = value - cost
+        pnl_color = "#00ff88" if pnl >= 0 else "#ff4d4d"
+
         st.markdown(
-            f"**{ticker}** → Value: {value:,.0f} | Cost: {cost:,.0f}"
+            f"""
+            <div style="
+                padding:10px;
+                border-bottom:1px solid #1f1f1f;
+            ">
+                <b>{ticker}</b>
+                <span style="float:right; color:{pnl_color};">
+                    {pnl:,.2f}
+                </span>
+                <br>
+                <span style="opacity:0.6;">
+                    Value: {value:,.2f} | Invested: {cost:,.2f}
+                </span>
+            </div>
+            """,
+            unsafe_allow_html=True
         )
 
 profit = total_value - total_cost
 
 st.markdown("---")
 
-st.metric("Total P&L", f"{profit:,.2f}")
+st.metric("Total Portfolio P&L", f"{profit:,.2f}")
