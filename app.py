@@ -1,96 +1,113 @@
 import streamlit as st
 import yfinance as yf
 
-st.set_page_config(page_title="Personal Wealth Terminal", layout="wide")
+st.set_page_config(page_title="Wealth Terminal", layout="wide")
 
-# ---------------- HEADER ----------------
 st.title("💼 Personal Wealth Terminal")
-st.caption("Visão pessoal de investimentos e património")
+st.caption("Portefólio pessoal com estrutura por planos e ativos")
 
 st.markdown("---")
 
-# ---------------- PORTFOLIO (EDITÁVEL NO CÓDIGO) ----------------
-portfolio = {
-    "AAPL": {"shares": 5, "avg": 150},
-    "NVDA": {"shares": 2, "avg": 400},
-    "BTC-USD": {"shares": 0.1, "avg": 30000}
+# -----------------------------
+# POSIÇÕES INDIVIDUAIS
+# -----------------------------
+positions = {
+    "BTC-USD": {"name": "Bitcoin Trust (CFD)", "units": 3, "avg": 40},
+    "TERA": {"name": "Terawulf (Ação)", "units": 3, "avg": 4},
 }
 
-# ---------------- CALCULATIONS ----------------
+# -----------------------------
+# PLANOS DE INVESTIMENTO
+# -----------------------------
+plans = {
+    "Satélite": {
+        "MSCI WORLD SMALL CAP ETF": {"units": 1, "avg": 25},
+        "MSCI INDIA ETF": {"units": 1, "avg": 25},
+    },
+    "Core": {
+        "S&P 500 ETF": {"units": 1, "avg": 300},
+    }
+}
+
+# -----------------------------
+# FUNÇÃO BASE
+# -----------------------------
+def get_value(ticker, units):
+    data = yf.Ticker(ticker).history(period="1d")
+    if data.empty:
+        return None
+    price = data["Close"].iloc[-1]
+    return price * units, price
+
+# -----------------------------
+# CALCULAR POSIÇÕES
+# -----------------------------
 total_value = 0
 total_cost = 0
 
-rows = []
+st.subheader("📊 Overview")
 
-for ticker, pos in portfolio.items():
-    data = yf.Ticker(ticker).history(period="1d")
+# POSITIONS
+st.markdown("### 🧾 Positions")
 
-    if not data.empty:
-        price = data["Close"].iloc[-1]
+for ticker, data_dict in positions.items():
+    result = get_value(ticker, data_dict["units"])
+    if result:
+        value, price = result
+        cost = data_dict["avg"] * data_dict["units"]
 
-        value = price * pos["shares"]
-        cost = pos["avg"] * pos["shares"]
         pnl = value - cost
-        pnl_pct = (pnl / cost) * 100 if cost != 0 else 0
+        pnl_pct = (pnl / cost) * 100
 
         total_value += value
         total_cost += cost
 
-        rows.append({
-            "ticker": ticker,
-            "value": value,
-            "cost": cost,
-            "pnl": pnl,
-            "pnl_pct": pnl_pct
-        })
-
-# ---------------- DASHBOARD ----------------
-st.subheader("🏠 Overview")
-
-col1, col2, col3 = st.columns(3)
-
-with col1:
-    st.metric("Portfolio Value", f"{total_value:,.2f}")
-
-with col2:
-    st.metric("Invested", f"{total_cost:,.2f}")
-
-with col3:
-    st.metric("Total P&L", f"{total_value - total_cost:,.2f}")
+        st.write(
+            f"**{data_dict['name']}** → "
+            f"{value:.2f} | P&L: {pnl:.2f} ({pnl_pct:.2f}%)"
+        )
 
 st.markdown("---")
 
-# ---------------- POSITIONS ----------------
-st.subheader("💼 Positions")
+# PLANS
+st.markdown("### 📦 Investment Plans")
 
-for r in rows:
-    st.write(
-        f"**{r['ticker']}** → "
-        f"Value: {r['value']:,.2f} | "
-        f"P&L: {r['pnl']:,.2f} ({r['pnl_pct']:.2f}%)"
-    )
+for plan_name, assets in plans.items():
+
+    plan_value = 0
+    plan_cost = 0
+
+    st.markdown(f"#### {plan_name}")
+
+    for ticker, d in assets.items():
+        result = get_value(ticker, d["units"])
+        if result:
+            value, price = result
+            cost = d["avg"] * d["units"]
+
+            plan_value += value
+            plan_cost += cost
+
+            st.write(f"- {ticker}: {value:.2f}")
+
+    plan_pnl = plan_value - plan_cost
+    plan_pct = (plan_pnl / plan_cost) * 100 if plan_cost else 0
+
+    st.info(f"{plan_name} Total → {plan_value:.2f} | P&L: {plan_pct:.2f}%")
+
+    total_value += plan_value
+    total_cost += plan_cost
 
 st.markdown("---")
 
-# ---------------- MARKET CONTEXT ----------------
-st.subheader("📊 Market Context")
+# -----------------------------
+# TOTAL
+# -----------------------------
+total_pnl = total_value - total_cost
+total_pct = (total_pnl / total_cost) * 100 if total_cost else 0
 
-assets = {
-    "S&P 500": "^GSPC",
-    "Nasdaq": "^NDX",
-    "BTC": "BTC-USD",
-    "Gold": "GC=F",
-    "Oil": "CL=F"
-}
+st.subheader("🏁 Total Portfolio")
 
-cols = st.columns(len(assets))
-
-for i, (name, ticker) in enumerate(assets.items()):
-    data = yf.Ticker(ticker).history(period="2d")
-
-    if len(data) >= 2:
-        last = data["Close"].iloc[-1]
-        prev = data["Close"].iloc[-2]
-        change = ((last - prev) / prev) * 100
-
-        cols[i].metric(name, f"{last:,.2f}", f"{change:.2f}%")
+st.metric("Value", f"{total_value:.2f}")
+st.metric("Invested", f"{total_cost:.2f}")
+st.metric("P&L", f"{total_pnl:.2f}", f"{total_pct:.2f}%")
