@@ -1,21 +1,39 @@
 import streamlit as st
 import yfinance as yf
 
-st.set_page_config(page_title="Finance Terminal", layout="wide")
+st.set_page_config(
+    page_title="Personal Terminal",
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
 
-# -----------------------
+# ----------------------------
 # HEADER
-# -----------------------
-st.title("📈 Finance Terminal")
+# ----------------------------
+st.markdown("""
+    <style>
+        .main-title {
+            font-size: 32px;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+        .sub-title {
+            font-size: 14px;
+            opacity: 0.7;
+            margin-bottom: 20px;
+        }
+    </style>
+""", unsafe_allow_html=True)
 
-st.caption("Mercado + Portefólio pessoal em tempo real")
+st.markdown('<div class="main-title">📈 Personal Finance Terminal</div>', unsafe_allow_html=True)
+st.markdown('<div class="sub-title">Markets • Portfolio • Crypto • Macro</div>', unsafe_allow_html=True)
 
 st.markdown("---")
 
-# -----------------------
-# MERCADO (CORE)
-# -----------------------
-st.subheader("📊 Mercado")
+# ----------------------------
+# MARKET OVERVIEW
+# ----------------------------
+st.subheader("📊 Market Overview")
 
 assets = {
     "S&P 500": "^GSPC",
@@ -23,8 +41,8 @@ assets = {
     "Dow Jones": "^DJI",
     "VIX": "^VIX",
     "Bitcoin": "BTC-USD",
-    "Ouro": "GC=F",
-    "Petróleo": "CL=F",
+    "Gold": "GC=F",
+    "Oil": "CL=F",
     "DXY": "DX-Y.NYB"
 }
 
@@ -54,10 +72,10 @@ for name, ticker in assets.items():
 
 st.markdown("---")
 
-# -----------------------
-# PORTFÓLIO SIMPLES (FAKE POR AGORA)
-# -----------------------
-st.subheader("💼 Portefólio")
+# ----------------------------
+# PORTFOLIO (SIMPLE)
+# ----------------------------
+st.subheader("💼 Portfolio Snapshot")
 
 portfolio = {
     "AAPL": {"shares": 5, "avg": 150},
@@ -79,10 +97,10 @@ for ticker, pos in portfolio.items():
         total_value += value
         total_cost += cost
 
-        st.write(f"**{ticker}** → Valor: {value:,.2f} | Investido: {cost:,.2f}")
+        st.write(f"**{ticker}** → Value: {value:,.2f} | Invested: {cost:,.2f}")
 
 profit = total_value - total_cost
 
 st.markdown("---")
 
-st.subheader(f"Resultado total: {profit:,.2f}")
+st.metric("Total P&L", f"{profit:,.2f}")
